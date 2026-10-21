@@ -1,52 +1,55 @@
-# Releasing data-v1.0
+# Dataset release: `data-v1.0`
 
-`aa_clean_v1.0.parquet` (68.4 MB) is larger than the 50 MB repository limit, so it is **not committed**. It is attached to a GitHub Release
-under the tag `data-v1.0`. The repository holds everything needed to verify it: `data/CHECKSUMS.sha256`, `data/data_manifest.json`,
-the dictionary, the cleaning script and a 5,000-row sample (`data/sample/aa_clean_sample.csv`).
+The cleaned dataset is **committed to the repository** at `data/processed/aa_clean_v1.0.parquet` (68.4 MB,
+1,641,071 rows, 59 columns) and tagged `data-v1.0`.
 
-## Steps
+We originally planned to distribute it as a GitHub Release asset, because our own working rule capped committed
+files at 50 MB. That rule was ours, not GitHub's: the platform accepts files up to 100 MB per file and only warns
+above 50 MB. Since the D2 brief requires the cleaned dataset to be *in the repository*, the file is committed
+directly. The decision is recorded in `docs/decisions.md`.
 
-1. Push the commit and the tag (the tag is created locally by the D2 commit step):
+## What ships with it
 
-   ```bash
-   git push origin vaibhav_new_build
-   git push origin data-v1.0
-   ```
+| Artefact | Path |
+|---|---|
+| Cleaned dataset | `data/processed/aa_clean_v1.0.parquet` |
+| 5,000-row stratified sample (250 per month, seed 42) | `data/sample/aa_clean_sample.csv` |
+| SHA-256 checksums | `data/CHECKSUMS.sha256` |
+| Manifest (row/column counts, schema hash, source dates, parameters, environment) | `data/data_manifest.json` |
+| Data dictionary | `docs/data_dictionary_clean.md`, `.csv` |
+| Cleaning code | `src/bufferengine/pipeline/` |
 
-2. On GitHub open the repository, then **Releases**, then **Draft a new release**.
-3. **Choose a tag:** select the existing tag `data-v1.0`.
-4. **Release title:** `data-v1.0`.
-5. **Attach binaries:** drag in `data/processed/aa_clean_v1.0.parquet` from your computer (a release asset can be up to 2 GB). Optionally also attach `data/CHECKSUMS.sha256`.
-6. **Release notes** (paste):
+The other parquet tables (base table, rotations, turns, breaks, MTT sensitivity) remain git-ignored. They are
+rebuilt by the pipeline and their checksums are recorded in `data/CHECKSUMS.sha256`.
 
-   ```
-   Cleaned dataset v1.0: American Airlines mainline flights from the BTS Reporting Carrier On-Time Performance files,
-   January 2025 to August 2026. 1,641,071 rows (no rows deleted), 59 columns.
-   Verify: SHA-256 of aa_clean_v1.0.parquet is in data/CHECKSUMS.sha256 (processed/aa_clean_v1.0.parquet).
-   Data dictionary: docs/data_dictionary_clean.md. Licence wording and caveats: DATA_NOTICE.md.
-   For academic use. Not connected to airline systems.
-   ```
-
-7. Leave "Set as the latest release" ticked and press **Publish release**. While the repository is private, the asset is visible only to people with access.
-
-## Using the asset
+## Verify your copy
 
 ```bash
-# download aa_clean_v1.0.parquet from the release into data/processed/, then:
 python -m bufferengine.pipeline.manifest --verify
 ```
 
-`--verify` reports a problem for any file in `CHECKSUMS.sha256` that is missing (for example the other parquet tables, which you only have after running
-`python -m bufferengine.pipeline.run_all`) or different. To check only the downloaded file on Windows PowerShell:
+`--verify` reports any file in `CHECKSUMS.sha256` that is missing or different. Files you have not rebuilt yet
+(the git-ignored tables) are reported as missing, which is expected until you run the pipeline.
+
+On Windows PowerShell, to check the one file:
 
 ```powershell
 Get-FileHash data\processed\aa_clean_v1.0.parquet -Algorithm SHA256
 ```
 
-and compare the hash with the line for `processed/aa_clean_v1.0.parquet` in `data/CHECKSUMS.sha256`.
+Compare against the `processed/aa_clean_v1.0.parquet` line in `data/CHECKSUMS.sha256`.
 
-## Authoritative checksum
+## Rebuild from raw
 
-The file SHA-256 is authoritative: the clean step writes identical bytes on repeated runs (checked twice, and again in a full rebuild from the raw files).
-For the other parquet tables the manifest also stores `content_sha256`, a hash of the logical content; if a file hash ever differs after a rebuild with a
-different library version, an equal `content_sha256` means the data are identical.
+```bash
+python -m bufferengine.pipeline.run_all
+```
+
+This downloads the 20 monthly BTS files (skipping any already present), builds the base table, reference tables
+and rotations, cleans, regenerates the audit evidence and rewrites the checksums. Output is byte-identical across
+runs, so the file SHA-256 is authoritative.
+
+## Versioning
+
+`data-v1.0` is immutable. Any change to a column name, type, unit or null rule bumps the data contract version
+(`docs/data_contract.md`) and produces a new tag. Earlier tags stay retrievable and verifiable.

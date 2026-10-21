@@ -55,7 +55,7 @@
       "description": "Cleaned AA flights, all 1,641,071 rows, 59 columns",
       "bytes": 68404639,
       "file_sha256": "3a18a9eafffa77ae74db70579be84255f8b04978efdcdb84524bd2900297f14a",
-      "committed_to_git": false,
+      "committed_to_git": true,
       "rows": 1641071,
       "columns": 59,
       "schema_sha256": "df2d60710c1f72592017e88a9987ce2863f1418f80aa356e0bd7e903c1db51ef",

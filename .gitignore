@@ -44,7 +44,9 @@ desktop.ini
 data/reference/ourairports_airports.csv
 data/reference/openflights_airports.dat
 
-# Safety net: no parquet files anywhere (rotation outputs in data/processed are large; small CSVs there are fine).
-# data/processed/aa_clean_v1.0.parquet (68 MB, over the 50 MB limit) is distributed as a GitHub Release asset under
-# tag data-v1.0; data/sample/aa_clean_sample.csv, data/CHECKSUMS.sha256 and data/data_manifest.json ARE committed.
+# Safety net: no parquet files anywhere (the Phase 1/2 rotation outputs are large; small CSVs there are fine).
+# EXCEPTION: data/processed/aa_clean_v1.0.parquet (68.4 MB) IS committed. It is the D2 deliverable and the brief
+# requires the cleaned dataset to be in the repository; GitHub's per-file limit is 100 MB, so it is accepted.
+# data/sample/aa_clean_sample.csv, data/CHECKSUMS.sha256 and data/data_manifest.json are committed too.
 *.parquet
+!data/processed/aa_clean_v1.0.parquet

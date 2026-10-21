@@ -32,7 +32,7 @@ DATA = REPO / "data"
 
 # (path relative to data/, description, committed to git?)
 TRACKED_FILES = [
-    ("processed/aa_clean_v1.0.parquet", "Cleaned AA flights, all 1,641,071 rows, 59 columns", False),
+    ("processed/aa_clean_v1.0.parquet", "Cleaned AA flights, all 1,641,071 rows, 59 columns", True),
     ("interim/aa_base_2025_2026.parquet", "Phase 1 base table (AA only, selected columns)", False),
     ("processed/rotations.parquet", "Phase 2 legs table, one row per flight", False),
     ("processed/rotation_turns.parquet", "Phase 2 turns table", False),

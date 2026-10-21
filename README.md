@@ -22,7 +22,7 @@ Every number in the audit is produced by a script in this repository, and the ta
 | Representativeness and bias, ending with who or what is under-represented | [docs/d2/representativeness_summary.md](docs/d2/representativeness_summary.md) |
 | Data-quality treatment log (issue, count, percent, treatment, reason) | [data/processed/dq_treatment_log.csv](data/processed/dq_treatment_log.csv) |
 | Source log with licence wording, and the data notice | [data/reference/source_log.csv](data/reference/source_log.csv), [DATA_NOTICE.md](DATA_NOTICE.md) |
-| **Cleaned dataset** `aa_clean_v1.0.parquet` (68.4 MB) | GitHub Release asset under tag **`data-v1.0`** (over the 50 MB repo limit, so not in git). A 5,000-row sample is in [data/sample/aa_clean_sample.csv](data/sample/aa_clean_sample.csv) |
+| **Cleaned dataset** `aa_clean_v1.0.parquet` (68.4 MB) | Committed at [data/processed/aa_clean_v1.0.parquet](data/processed/aa_clean_v1.0.parquet), tagged **`data-v1.0`**. A 5,000-row sample is in [data/sample/aa_clean_sample.csv](data/sample/aa_clean_sample.csv) |
 | Checksums and data manifest | [data/CHECKSUMS.sha256](data/CHECKSUMS.sha256), [data/data_manifest.json](data/data_manifest.json) |
 | Data dictionary for the cleaned dataset | [docs/data_dictionary_clean.md](docs/data_dictionary_clean.md) (and `.csv`) |
 | Cleaning script | [src/bufferengine/pipeline/clean.py](src/bufferengine/pipeline/clean.py) |
@@ -74,7 +74,7 @@ pytest                                                  # all tests
 `--skip-download` (raw files already in `data/raw/`), `--skip-evidence`, `--only clean,checksums`. The full run takes about 10 to 15 minutes.
 
 The cleaned file is written byte-for-byte identically on repeated runs; `data/CHECKSUMS.sha256` is the authoritative checksum. The manifest also records a
-content hash for the parquet tables as a fallback. Raw BTS files, interim files and all parquet files are git-ignored.
+content hash for the parquet tables as a fallback. Raw BTS files, interim files and the large Phase 1/2 parquet tables are git-ignored; the cleaned dataset `aa_clean_v1.0.parquet` is committed.
 
 ## Run the app locally
 
