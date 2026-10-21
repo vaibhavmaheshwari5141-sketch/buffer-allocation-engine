@@ -43,6 +43,17 @@ pip install -e .
 pytest
 ```
 
+## Data pipeline (Phase 1)
+
+```bash
+python -m bufferengine.pipeline.download_bts   # 20 monthly BTS zips into data/raw/ (about 570 MB, resumable)
+python -m bufferengine.pipeline.build_base     # data/interim/aa_base_2025_2026.parquet (AA only, 1.64M rows)
+python -m bufferengine.pipeline.reference      # data/reference/airports_tz.csv
+```
+
+Raw and interim data are git-ignored. See [docs/data_dictionary.md](docs/data_dictionary.md),
+[docs/fit_gap.md](docs/fit_gap.md) and [docs/data_contract.md](docs/data_contract.md).
+
 ## Notebooks
 
 Notebooks run in Databricks Free Edition against data in the `bufferengine` Volume. Exported `.ipynb`
@@ -54,7 +65,7 @@ for the planned list.
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Setup and scaffolding | Done |
-| 1 | Data acquisition, audit, data contract | Not started |
+| 1 | Data acquisition, audit, data contract | Done |
 | 2 | Rotation building and EDA | Not started |
 | 3 | Prediction model | Not started |
 | 4 | Propagation model and Monte Carlo simulator | Not started |

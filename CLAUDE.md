@@ -23,8 +23,9 @@ model, then adds propagation modelling, simulation and optimisation.
    (`Reporting_Airline = AA`), 2025 (train) and Jan–Aug 2026 (test). Key fields: `Tail_Number`,
    `Flight_Number_Reporting_Airline`, `FlightDate`, `Origin`, `Dest`, `CRSDepTime`, `CRSArrTime`,
    `CRSElapsedTime`, `Distance`, `DepDelay`, `ArrDelay`, `ArrDel15`, `Cancelled`, `Diverted`,
-   `LateAircraftDelay`. BTS times are local, so airport time zones (OurAirports, free) are needed to
-   compute ground time. Real flights stay real; derived fields (planned ground time, minimum turnaround
+   `LateAircraftDelay`. BTS times are local, so airport time zones are needed to compute ground time:
+   the IANA zone is derived from OurAirports lat/lon with the free `timezonefinder` library (OpenFlights
+   `airports.dat` as fallback), not taken from OurAirports directly. Real flights stay real; derived fields (planned ground time, minimum turnaround
    time (MTT), planned buffer) are computed; cost per buffer/delay minute are labelled adjustable
    assumptions; synthetic data is used only for stress scenarios.
 2. **Prediction model** — gradient boosting (XGBoost or LightGBM) plus a logistic regression baseline,
@@ -50,7 +51,7 @@ model, then adds propagation modelling, simulation and optimisation.
 ## Where things run
 
 - **Databricks Free Edition** — heavy pipeline, notebooks, model training, simulation, optimisation.
-  Raw data lives there, not in git. Volume name: `bufferengine`.
+  Raw data lives there, not in git. Unity Catalog: catalog `workspace`, schema `default`, Volume `bufferengine`; notebook path `/Volumes/workspace/default/bufferengine/` (CLI path `dbfs:/Volumes/workspace/default/bufferengine/`). Inside it, folders mirror the repo `data/` folder: `interim/`, `reference/`, `processed/`.
 - **GitHub repo** — code, notebooks (exported `.ipynb` and HTML), small result files only.
 - **Netlify free tier** — static frontend only. No Python backend. No paid services anywhere.
 

@@ -13,3 +13,5 @@ xlsxwriter
 matplotlib
 jupyter
 pytest
+requests
+timezonefinder

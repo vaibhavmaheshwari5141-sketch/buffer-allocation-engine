@@ -39,3 +39,11 @@ npm-debug.log*
 Thumbs.db
 desktop.ini
 .idea/
+
+# Reference downloads that the scripts can re-create (airports_tz.csv itself is committed)
+data/reference/ourairports_airports.csv
+data/reference/openflights_airports.dat
+
+# Safety net: no data files outside the git-ignored folders
+*.parquet
+!data/processed/*.parquet
