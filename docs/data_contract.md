@@ -1,8 +1,8 @@
 # Data contract
 
-Contract version: **1.0** (Phase 1, 2026-10-21). Any change to a column name, type, unit or null rule
+Contract version: **1.1** (Phase 2, 2026-10-21; v1.0 was Phase 1). Any change to a column name, type, unit or null rule
 bumps the version; the version is written into the workbook `manifest` so the app can reject files it
-does not understand.
+does not understand. Section (a) changed in v1.1 (see "Changes from v1.0" in that section); sections (b) and (c) are unchanged.
 
 ## Conventions
 
@@ -23,58 +23,152 @@ does not understand.
 
 ---
 
-## a) Rotation table
+## a) Rotation tables (v1.1)
 
-One row per leg in a **usable** aircraft chain (tail-day). File: `data/processed/rotations.parquet`
-(built in Phase 2, notebook `02_rotation_building`).
+Built by `src/bufferengine/pipeline/build_rotations.py` (notebook `02_rotation_building`). Four parquet files in
+`data/processed/` (git-ignored; large) plus small committed CSVs (`mtt_estimates.csv`,
+`rotation_reconciliation.csv`, `rotation_rule_comparison.csv`).
 
-**Usable chain:** non-null tail number; at least 2 operated legs on the local FlightDate; no diverted
-legs; every consecutive pair continuous (previous `dest` = next `origin`) after cancelled legs are
-removed. Legs are ordered by scheduled UTC departure. Cancelled legs are excluded from the chain and
-counted in `n_cancelled_removed`.
+**Chain rules (v1.1).**
 
-**Primary key:** (`tail_number`, `flight_date`, `leg_idx`). **Also unique:** (`flight_date`,
-`flight_number`, `origin`, `dest`, `crs_dep_time`) — the flight key shared with the prediction table.
+1. Chains use **operated** flights (cancelled = 0 and diverted = 0). Cancelled and diverted flights stay in the
+   aircraft's sequence at their scheduled position and **break** the chain; they are not removed and chained through.
+2. Per aircraft, legs are ordered by scheduled UTC departure (ties: flight number, flight_id). Two consecutive
+   legs are linked only if previous `dest` = next `origin` **and** the next scheduled departure is not before the
+   previous scheduled arrival (UTC). A pair that fails the second test is a tail swap (`swap_suspect`): the chain
+   breaks and the pair is written to `rotation_breaks`. There is no "kept with a flag" case.
+3. A new **operating day** starts when the scheduled ground time to the next leg exceeds 300 minutes
+   (`REST_GAP_MIN`). A leg that crosses midnight, and an early leg after a short turn behind it, stay in the same
+   operating day. `operating_day` is the local FlightDate of the first flight of the run.
+4. A **segment** is a maximal run of linked operated legs. **`usable` applies to a segment**: at least 2 consecutive
+   legs. Single-leg segments are kept with `usable = false`. A tail-day (`rotation_id`) can hold several segments.
+5. Every base flight is in exactly one `category` (priority in this order): `cancelled`, `diverted`, `missing_tail`,
+   `other` (no valid UTC times), `single_leg_segment`, `usable_segment`.
+
+### a1) `rotations.parquet`: one row per base flight (1,641,071 rows)
+
+**Keys:** `flight_id` is unique. (`segment_id`, `leg_idx`) is unique among operated legs.
 
 | Column | Type | Unit | Null? | Kind | Definition |
 |---|---|---|---|---|---|
-| rotation_id | string | | No | derived | `{tail_number}_{flight_date}` |
-| tail_number | string | | No | real | Normalised BTS Tail_Number |
-| flight_date | date | | No | real | BTS FlightDate (local departure date of the leg) |
-| leg_idx | int | | No | derived | 1..n_legs in UTC departure order |
-| n_legs | int | | No | derived | Legs in the chain |
-| n_cancelled_removed | int | | No | derived | Cancelled legs of this tail-day removed before chaining |
+| rotation_id | string | | Yes: missing tail | derived | `{tail_number}_{flight_date}` (tail-day key; a segment that crosses midnight spans two rotation_ids) |
+| flight_id | string | | No | derived | `{YYYYMMDD}-{flight_number}-{origin}-{dest}-{crs_dep_time:04d}` |
+| tail_number | string | | Yes: 11 cancelled flights | real | Normalised BTS Tail_Number |
+| flight_date | date | | No | real | BTS FlightDate (local departure date) |
+| operating_day | date | | Yes: not operated | derived | See rule 3 |
+| segment_id | string | | Yes: not operated | derived | `{tail_number}_{flight_id of the segment's first leg}` |
+| leg_idx | int | | Yes: not operated | derived | Position in the segment, 1-based. **Not a prediction feature** |
+| n_legs | int | | Yes: not operated | derived | Legs in the segment. **Not a prediction feature** |
+| n_segments | int | | Yes: not operated | derived | Segments (including single-leg) of this rotation_id |
+| n_downstream_legs | int | | Yes: not operated | derived | `n_legs - leg_idx`, legs after this one in the realised chain. **Not a prediction feature** |
+| n_cancelled_in_tail_day | int | | Yes: missing tail | derived | Informational: cancelled flights of this tail on this flight_date (was `n_cancelled_removed` in v1.0) |
 | flight_number | int | | No | real | Flight_Number_Reporting_Airline |
-| origin | string | | No | real | IATA |
-| dest | string | | No | real | IATA |
-| origin_tz | string | | No | derived | IANA zone from `airports_tz.csv` |
-| dest_tz | string | | No | derived | IANA zone from `airports_tz.csv` |
-| crs_dep_time | int | hhmm | No | real | CRSDepTime |
-| crs_arr_time | int | hhmm | No | real | CRSArrTime |
-| crs_dep_local | timestamp_local | | No | derived | FlightDate + CRSDepTime at origin |
-| crs_arr_local | timestamp_local | | No | derived | Inferred arrival date + CRSArrTime at dest |
-| crs_dep_utc | timestamp_utc | | No | derived | crs_dep_local converted with origin_tz |
-| crs_arr_utc | timestamp_utc | | No | derived | crs_arr_local converted with dest_tz |
+| origin, dest | string | | No | real | IATA |
+| origin_tz, dest_tz | string | | No | derived | IANA zone from `airports_tz.csv` |
+| crs_dep_time, crs_arr_time | int | hhmm | No | real | Local scheduled times |
+| crs_dep_local, crs_arr_local | timestamp_local | | No | derived | FlightDate (plus inferred arrival day) + time, at the airport's local clock |
+| crs_dep_utc, crs_arr_utc | timestamp_utc | | No | derived | Local times converted with the airport zones |
 | arr_day_offset | int | days | No | derived | 0 = arrives on FlightDate, 1 = next day |
 | crs_block_min | float | min | No | real | CRSElapsedTime |
 | distance_mi | float | mi | No | real | Distance |
-| act_dep_utc | timestamp_utc | | No | derived | crs_dep_utc + dep_delay_min |
-| act_arr_utc | timestamp_utc | | No | derived | crs_arr_utc + arr_delay_min |
-| dep_delay_min | float | min | No | real | DepDelay (outcome: validation only, never a feature) |
-| arr_delay_min | float | min | No | real | ArrDelay (outcome) |
-| arr_del15 | int | 0/1 | No | real | ArrDel15 (outcome / target) |
-| late_aircraft_delay_min | float | min | Yes: arr_delay_min < 15 | real | LateAircraftDelay |
-| primary_delay_min | float | min | No | derived | max(arr_delay_min, 0) − coalesce(late_aircraft_delay_min, 0): delay not inherited from the previous leg |
-| sched_ground_min | float | min | Yes: last leg | derived | Next leg crs_dep_utc − this leg crs_arr_utc |
-| actual_ground_min | float | min | Yes: last leg | derived | Next leg act_dep_utc − this leg act_arr_utc |
-| mtt_min | float | min | Yes: last leg | assumption | Estimated minimum turnaround at `dest` for the next departure (method fixed in Phase 2; value logged in manifest) |
-| planned_buffer_min | float | min | Yes: last leg | derived from assumption | sched_ground_min − mtt_min (may be negative) |
-| is_first_leg | bool | | No | derived | leg_idx = 1 |
-| is_last_leg | bool | | No | derived | leg_idx = n_legs |
-| flag_negative_ground | bool | | No | derived | sched_ground_min < 0 (as-flown sequence differs from the schedule: tail swap) |
-| flag_below_mtt | bool | | No | derived | planned_buffer_min < 0 |
-| flag_overnight_arrival | bool | | No | derived | arr_day_offset > 0 |
-| split | string | | No | derived | `train` (Jan–Sep 2025), `validate` (Oct–Dec 2025), `test` (Jan–Aug 2026) |
+| act_dep_utc, act_arr_utc | timestamp_utc | | Yes: not operated | derived | crs UTC + dep_delay_min / arr_delay_min |
+| dep_delay_min, arr_delay_min | float | min | Yes: cancelled, diverted (arr) | real | BTS DepDelay, ArrDelay (outcomes) |
+| arr_del15 | int | 0/1 | Yes: cancelled, diverted | real | BTS ArrDel15 (target) |
+| late_aircraft_delay_min | float | min | Yes: arr_delay_min < 15 | real | BTS LateAircraftDelay |
+| primary_delay_min | float | min | Yes: not operated | derived | `max(arr_delay_min, 0) - coalesce(late_aircraft_delay_min, 0)`: delay not inherited from the previous leg |
+| cancelled, diverted | int | 0/1 | No | real | BTS flags |
+| category | string | | No | derived | `usable_segment`, `single_leg_segment`, `cancelled`, `diverted`, `missing_tail`, `other` |
+| usable | bool | | No | derived | Operated and in a segment of 2+ legs |
+| split | string | | No | derived | `train` (to 2025-09-30), `validate` (2025-10 to 2025-12), `test` (2026-01 to 2026-08), by flight_date |
+| storm_day_flag | bool | | No | derived | flight_date in 2026-01-24 to 2026-01-28 |
+| high_cancel_day | bool | | No | derived | More than 10% of that day's flights cancelled |
+| break_reason_before | string | | Yes: not operated | derived | `first_flight`, `long_rest`, `cancelled`, `diverted`, `airport_mismatch`, `swap_suspect`, or `linked` |
+| break_reason_after | string | | Yes: not operated | derived | Same values, plus `last_flight` |
+| sched_ground_min | float | min | Yes: last leg of a segment, not usable | derived | Scheduled ground time to the **next** leg of the segment (next crs_dep_utc minus crs_arr_utc) |
+| actual_ground_min | float | min | Same | derived | Same using actual times |
+| mtt_min | float | min | Same | assumption | Estimated minimum turnaround for that turn (a2) |
+| planned_buffer_min | float | min | Same | derived from assumption | `max(0, sched_ground_min - mtt_min)` |
+| flag_below_mtt | bool | | Same | derived | `sched_ground_min < mtt_min` |
+| is_first_leg, is_last_leg | bool | | Yes: not operated | derived | Position in the segment |
+| flag_overnight_arrival | bool | | No (null-safe) | derived | `arr_day_offset > 0` |
+
+### a2) `rotation_turns.parquet`: one row per consecutive leg pair inside a usable segment (1,045,807 rows)
+
+**Key:** `turn_id` = `{inbound_flight_id}>{outbound_flight_id}` (unique). The turn belongs to the outbound flight's
+date for `split` and the flags.
+
+| Column | Type | Unit | Null? | Kind | Definition |
+|---|---|---|---|---|---|
+| turn_id | string | | No | derived | See above |
+| tail_number, operating_day, segment_id | | | No | derived | As in a1 |
+| station | string | | No | real | Airport of the turn (inbound `dest`) |
+| station_tz | string | | No | derived | IANA zone of the station |
+| inbound_flight_id, outbound_flight_id | string | | No | derived | |
+| turn_index_in_segment | int | | No | derived | 1 = turn between legs 1 and 2. **Not a prediction feature** |
+| n_downstream_legs_after_turn | int | | No | derived | Outbound and later legs: `n_legs - turn_index_in_segment`. **Not a prediction feature** |
+| sched_ground_min | float | min | No | derived | Always >= 0 and <= 300 by construction |
+| actual_ground_min | float | min | No | derived | May be <= 0 for 235 turns (see flag) |
+| inbound_dep_delay_min, inbound_arr_delay_min | float | min | No | real | |
+| outbound_dep_delay_min, outbound_arr_delay_min | float | min | No | real | |
+| late_aircraft_delay_outbound_min | float | min | Yes: outbound arr_delay < 15 | real | BTS LateAircraftDelay of the outbound flight |
+| inbound_sched_arr_local, outbound_sched_dep_local | timestamp_local | | No | derived | Station local clock |
+| inbound_flight_date, outbound_flight_date | date | | No | real | |
+| split | string | | No | derived | By `outbound_flight_date` |
+| storm_day_flag, high_cancel_day | bool | | No | derived | By `outbound_flight_date` |
+| tod_band | string | | No | derived | Local hour of the outbound scheduled departure: `morning` 05-09, `midday` 10-14, `afternoon` 15-19, `night` 20-04 |
+| flag_actual_ground_nonpositive | bool | | No | derived | `actual_ground_min <= 0`: the aircraft cannot have flown both; excluded from MTT estimation and the premise check |
+| station_class | string | | No | derived | `high_volume` (>= 20 train turns/day at the station; 13 stations) or `other` |
+| mtt_source | string | | No | derived | `station_band`, `class_band` or `global` (fallback used) |
+| mtt_min | float | min | No | **assumption** | Minimum turnaround estimate (see below) |
+| flag_below_mtt | bool | | No | derived | `sched_ground_min < mtt_min` |
+| planned_buffer_min | float | min | No | derived from assumption | `max(0, sched_ground_min - mtt_min)` |
+| buffer_bucket | string | | No | derived | `0`, `1-15`, `16-30`, `31-60`, `60+` (minutes of planned buffer) |
+
+**MTT estimate (assumption).** Per station and `tod_band`, the `mtt_percentile` (default **0.10**) of
+`actual_ground_min` over **train** turns where `inbound_arr_delay_min > 0` and `outbound_dep_delay_min > 0` and
+`actual_ground_min > 0`. A cell needs at least 50 such turns; otherwise the `station_class` x band cell (same
+rule), then one global value. Result clipped to a **floor of 25 min** and **cap of 60 min**. No validate or test turn
+is read. Estimates are written to `data/processed/mtt_estimates.csv` and logged in the export manifest.
+
+### a3) `rotation_breaks.parquet`: consecutive aircraft flights that were not linked for a flight-level reason (93,458 rows)
+
+Excludes the benign boundaries `first_flight` and `long_rest`. One row per rejected pair.
+
+| Column | Type | Unit | Null? | Kind | Definition |
+|---|---|---|---|---|---|
+| next_flight_id, prev_flight_id | string | | No | derived | The pair (next is the later flight) |
+| tail_number | string | | No | real | |
+| reason | string | | No | derived | `cancelled`, `diverted`, `airport_mismatch`, `swap_suspect` (precedence in this order after `long_rest`) |
+| non_operated_side | string | | No | derived | For cancelled / diverted: `prev`, `next` or `both`; otherwise `neither` |
+| prev_dest, next_origin, next_dest | string | | No | real | |
+| gap_min | float | min | No | derived | Scheduled next departure minus previous arrival (negative for swaps) |
+| airport_mismatch, negative_gap | bool | | No | derived | Both conditions, recorded independently |
+| flight_date | date | | No | real | Date of the next flight |
+| split, storm_day_flag, high_cancel_day | | | No | derived | By `flight_date` |
+
+### a4) `mtt_sensitivity.parquet`: planned buffer under other MTT percentiles (1,045,807 rows)
+
+`turn_id`, `split`, `sched_ground_min`, then for each percentile p05, p10, p20: `mtt_pXX_min` (assumption) and
+`planned_buffer_pXX_min` (derived from assumption). The main table uses p10.
+
+### Changes from v1.0
+
+1. Column names are the v1.0 snake_case names (`tail_number`, `leg_idx`, `crs_dep_utc`, `act_dep_utc`, `dep_delay_min`,
+   `mtt_min`, ...). Phase 2 prompt names were mapped: `tail`→`tail_number`, `leg_index_in_segment`→`leg_idx`,
+   `n_legs_in_segment`→`n_legs`, `sched_dep_utc`→`crs_dep_utc`, `actual_dep_utc`→`act_dep_utc`, `dep_delay`→`dep_delay_min`,
+   `mtt_est_min`→`mtt_min`. Turn delays carry the same `_min` suffix.
+2. Files are in `data/processed/` and `rotations.parquet` is the legs table.
+3. `split` values stay `train` / `validate` / `test`.
+4. Cancelled and diverted legs **break** chains (v1.0 removed cancelled legs and chained through). Tail swaps break chains and are
+   counted in `rotation_breaks` (v1.0 kept them with `flag_negative_ground`, now removed). `usable` applies to a **segment**
+   of 2+ legs, not the tail-day.
+5. Added `segment_id`, `n_segments`, `n_downstream_legs`, `storm_day_flag`, `high_cancel_day`, `operating_day`, `category`, `usable`,
+   `break_reason_before/after`. `rotation_id` kept as `{tail_number}_{flight_date}`. `n_cancelled_removed` renamed
+   `n_cancelled_in_tail_day` (informational).
+6. The table now has **one row per base flight** (not only usable legs) so that every flight is accounted for; usable legs are `usable = true`.
+7. `planned_buffer_min = max(0, sched_ground_min - mtt_min)` (v1.0 allowed negative values); the shortfall is `flag_below_mtt`.
+8. Ground-time columns are on the leg row for the turn that follows it.
+9. New tables: `rotation_turns`, `rotation_breaks`, `mtt_sensitivity`.
 
 ---
 
@@ -127,7 +221,7 @@ derived, assumption, synthetic, model, meta), `description` (string).
 
 | key | Type of value | Kind | Description |
 |---|---|---|---|
-| contract_version | string | meta | `1.0` |
+| contract_version | string | meta | `1.1` |
 | run_id | string | meta | Unique ID of the export run |
 | run_date_utc | timestamp_utc | meta | When the workbook was written |
 | git_commit | string | meta | Repo commit of the code that produced it |

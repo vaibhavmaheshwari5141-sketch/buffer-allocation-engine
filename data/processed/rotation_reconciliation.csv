@@ -1,0 +1,7 @@
+category,flights,pct
+usable_segment,1408848,85.849
+single_leg_segment,191021,11.64
+cancelled,35245,2.148
+diverted,5957,0.363
+missing_tail,0,0.0
+other,0,0.0

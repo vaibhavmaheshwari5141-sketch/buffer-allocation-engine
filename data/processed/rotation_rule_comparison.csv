@@ -1,0 +1,6 @@
+rule,count,legs
+tail-days with a tail number (all flights),478938,1641060
+"OLD v1.0 rule: usable tail-days (cancelled legs removed, all pairs continuous, no diversion)",405613,1494403
+NEW v1.1 rule: tail-days with at least one usable segment,384708,1408848
+NEW v1.1 rule: tail-days that are one single usable segment (comparable to the old rule),306913,1162136
+NEW v1.1 rule: usable segments,363041,1408848

@@ -49,10 +49,12 @@ pytest
 python -m bufferengine.pipeline.download_bts   # 20 monthly BTS zips into data/raw/ (about 570 MB, resumable)
 python -m bufferengine.pipeline.build_base     # data/interim/aa_base_2025_2026.parquet (AA only, 1.64M rows)
 python -m bufferengine.pipeline.reference      # data/reference/airports_tz.csv
+python -m bufferengine.pipeline.build_rotations  # Phase 2: data/processed/ rotations, rotation_turns, rotation_breaks, mtt_sensitivity (parquet, git-ignored)
 ```
 
 Raw and interim data are git-ignored. See [docs/data_dictionary.md](docs/data_dictionary.md),
-[docs/fit_gap.md](docs/fit_gap.md) and [docs/data_contract.md](docs/data_contract.md).
+[docs/fit_gap.md](docs/fit_gap.md), [docs/data_contract.md](docs/data_contract.md) (v1.1) and
+[docs/rotation_reconciliation.md](docs/rotation_reconciliation.md).
 
 ## Notebooks
 
@@ -66,7 +68,7 @@ for the planned list.
 |---|---|---|
 | 0 | Setup and scaffolding | Done |
 | 1 | Data acquisition, audit, data contract | Done |
-| 2 | Rotation building and EDA | Not started |
+| 2 | Rotation building, MTT and planned buffer | Done |
 | 3 | Prediction model | Not started |
 | 4 | Propagation model and Monte Carlo simulator | Not started |
 | 5 | Optimiser | Not started |

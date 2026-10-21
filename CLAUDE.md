@@ -74,7 +74,7 @@ pyproject.toml          makes src/bufferengine importable
 data/
   raw/                  BTS downloads (git-ignored)
   interim/              intermediate files (git-ignored)
-  processed/            small processed outputs
+  processed/            rotation tables (parquet, git-ignored) and small CSVs (committed)
   reference/            small reference tables (e.g. airport time zones)
 notebooks/              01_data_audit ... 08_export (.ipynb + HTML exports)
 src/bufferengine/

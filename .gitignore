@@ -44,6 +44,5 @@ desktop.ini
 data/reference/ourairports_airports.csv
 data/reference/openflights_airports.dat
 
-# Safety net: no data files outside the git-ignored folders
+# Safety net: no parquet files anywhere (rotation outputs in data/processed are large; small CSVs there are fine)
 *.parquet
-!data/processed/*.parquet

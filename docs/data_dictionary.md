@@ -77,3 +77,29 @@ arrivals), as hhmm integers (`705` = 07:05, `2400` = midnight at the end of the 
 - Schedule-derived features computed later (e.g. leg position in the day, planned ground time) are
   allowed in principle, but anything derived from the **as-flown** tail sequence can leak delay-driven
   swaps; Phase 3 must decide how to build them from schedule information only.
+
+
+---
+
+# Rotation tables (Phase 2)
+
+Files in `data/processed/`: `rotations.parquet` (one row per base flight), `rotation_turns.parquet`,
+`rotation_breaks.parquet`, `mtt_sensitivity.parquet`. Column-by-column definitions, types, units and null rules are
+in **`docs/data_contract.md` section (a), contract v1.1**; this section records only **which fields may be prediction features**.
+
+| Field group | Fields | Feature? |
+|---|---|---|
+| Schedule and calendar, known before departure | `flight_date`, `origin`, `dest`, `origin_tz`, `dest_tz`, `crs_dep_time`, `crs_arr_time`, `crs_dep_local`, `crs_arr_local`, `crs_dep_utc`, `crs_arr_utc`, `arr_day_offset`, `crs_block_min`, `distance_mi`, `flag_overnight_arrival`, `split` | **YES** (`split` is a partition label, not an input) |
+| Chain position and chain shape | `operating_day`, `segment_id`, `leg_idx`, `n_legs`, `n_segments`, `n_downstream_legs`, `is_first_leg`, `is_last_leg`, `turn_index_in_segment`, `n_downstream_legs_after_turn`, `category`, `usable`, `break_reason_before`, `break_reason_after`, `rotation_id`, `n_cancelled_in_tail_day` | **NO until a leakage review.** They are computed from the realised (operated) chain, which depends on same-day cancellations, diversions and tail swaps. They **may be used by the optimiser**, where the planned rotation is assumed to equal the operated rotation (a documented limitation) |
+| Ground time, MTT and buffer | `sched_ground_min`, `mtt_min`, `mtt_source`, `planned_buffer_min`, `flag_below_mtt`, `buffer_bucket`, `station_class`, `tod_band`, `mtt_pXX_min`, `planned_buffer_pXX_min` | **NO until a leakage review.** The schedule gap itself is known in advance but is defined through the realised tail sequence, and `mtt_min` is an estimate fitted on train outcomes |
+| Outcomes and actuals | `act_dep_utc`, `act_arr_utc`, `dep_delay_min`, `arr_delay_min`, `arr_del15`, `late_aircraft_delay_min`, `primary_delay_min`, `actual_ground_min`, `flag_actual_ground_nonpositive`, `inbound_*_delay_min`, `outbound_*_delay_min`, `late_aircraft_delay_outbound_min`, `cancelled`, `diverted` | **NO** (outcomes) |
+| Disruption labels | `storm_day_flag`, `high_cancel_day` | **NO** (defined from same-day outcomes). Use only to include or exclude days in evaluation |
+| Keys | `flight_id`, `turn_id`, `tail_number`, `station` | Keys, not features |
+
+## Phase 2 notes
+
+- **Planned rotation versus operated rotation.** `tail_number` is the aircraft that flew. All chain fields describe the operated
+  rotation. Tail swaps (33,461 pairs) break chains, so `n_downstream_legs` is a lower bound on the planned downstream exposure.
+- **MTT is an assumption**, estimated from train-period turns only (see the contract). It is not a BTS field.
+- **`sched_ground_min`, `actual_ground_min`, `mtt_min`, `planned_buffer_min` on `rotations.parquet`** describe the turn that
+  follows the leg (null on the last leg of a segment).
