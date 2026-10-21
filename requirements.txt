@@ -1,0 +1,15 @@
+# Planned Python packages. Phase 0 installs only pytest and pandas locally.
+pandas
+pyarrow
+duckdb
+scikit-learn
+xgboost
+lightgbm
+shap
+ortools
+highspy
+openpyxl
+xlsxwriter
+matplotlib
+jupyter
+pytest
