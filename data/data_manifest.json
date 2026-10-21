@@ -1,0 +1,131 @@
+{
+  "data_version": "data-v1.0",
+  "generated_utc": "2026-10-21T09:50:30Z",
+  "authoritative_checksum": "file_sha256 in data/CHECKSUMS.sha256 (identical bytes on repeated runs); content_sha256 is the fallback for parquet tables",
+  "row_count_clean": 1641071,
+  "column_count_clean": 59,
+  "schema_sha256_clean": "df2d60710c1f72592017e88a9987ce2863f1418f80aa356e0bd7e903c1db51ef",
+  "expected_rows": 1641071,
+  "sources": {
+    "bts_months": "2025-01 to 2026-08",
+    "bts_files": 20,
+    "bts_rows_all_carriers": 11730351,
+    "bts_access_first_utc": "2026-10-21",
+    "bts_access_last_utc": "2026-10-21",
+    "bts_url_pattern": "https://transtats.bts.gov/PREZIP/On_Time_Reporting_Carrier_On_Time_Performance_1987_present_{YEAR}_{MONTH}.zip"
+  },
+  "reference_data": {
+    "airports_tz_csv": "data/reference/airports_tz.csv (derived from OurAirports lat/lon with timezonefinder; one airport from OpenFlights)",
+    "details": "data/reference/source_log.csv"
+  },
+  "code_git_commit_at_build": "5a63cd03743b2f77b5b1e664309cb33a5f25eee5",
+  "code_git_dirty_at_build": true,
+  "note_on_commit": "The release commit contains this manifest, so it cannot record its own hash. The tag data-v1.0 points to that commit; code_git_commit_at_build is its parent.",
+  "environment": {
+    "python": "3.12.10",
+    "pandas": "3.0.6",
+    "pyarrow": "26.0.0",
+    "duckdb": "1.5.6"
+  },
+  "parameters": {
+    "split": {
+      "train": "2025-01-01..2025-09-30",
+      "validate": "2025-10-01..2025-12-31",
+      "test": "2026-01-01..2026-08-31"
+    },
+    "arr_delay_cap_quantiles": [
+      0.005,
+      0.995
+    ],
+    "arr_delay_cap_low_min": -42.0,
+    "arr_delay_cap_high_min": 454.0,
+    "extreme_delay_min": 1440,
+    "taxi_extreme_min": 180,
+    "elapsed_diff_extreme_min": 180,
+    "parquet_compression": "zstd level 19",
+    "sample_rows": 5000,
+    "sample_seed": 42,
+    "rest_gap_min": 300,
+    "mtt_percentile_default": 0.1,
+    "mtt_floor_min": 25,
+    "mtt_cap_min": 60
+  },
+  "tables": {
+    "processed/aa_clean_v1.0.parquet": {
+      "description": "Cleaned AA flights, all 1,641,071 rows, 59 columns",
+      "bytes": 68404639,
+      "file_sha256": "3a18a9eafffa77ae74db70579be84255f8b04978efdcdb84524bd2900297f14a",
+      "committed_to_git": false,
+      "rows": 1641071,
+      "columns": 59,
+      "schema_sha256": "df2d60710c1f72592017e88a9987ce2863f1418f80aa356e0bd7e903c1db51ef",
+      "content_sha256": "22dce3ecc3cf6e681b442d485f51b0e644fb9fd86031f995b0823111d4f1f5f3"
+    },
+    "interim/aa_base_2025_2026.parquet": {
+      "description": "Phase 1 base table (AA only, selected columns)",
+      "bytes": 49110964,
+      "file_sha256": "3ec7095dcf2b641ee69544d04cc0dd93fde017b985a1a54a8faffac2680b0248",
+      "committed_to_git": false,
+      "rows": 1641071,
+      "columns": 45,
+      "schema_sha256": "35a780c7d2759d321946e5608ddedb1cee9dc107afb82f94fa65039505939627",
+      "content_sha256": "03945a8a501a0653e84ee411aa403106967fd7290263f091b7761d5270055813"
+    },
+    "processed/rotations.parquet": {
+      "description": "Phase 2 legs table, one row per flight",
+      "bytes": 88768969,
+      "file_sha256": "fe48c4a277e1bbd1a4cc6699afe9c41072b4aefd0905121d486181c5a1b5a556",
+      "committed_to_git": false,
+      "rows": 1641071,
+      "columns": 49,
+      "schema_sha256": "e2ac209d0786ca3cf552ce6ed22f22ce021a9ed116d8a6a8e98dcbe6073dd19f",
+      "content_sha256": "56f57bdeac8f63a91ea9e02547ad486e6426320cc6a926be3f45b7f1291a4363"
+    },
+    "processed/rotation_turns.parquet": {
+      "description": "Phase 2 turns table",
+      "bytes": 52067446,
+      "file_sha256": "21e5260241204ea36dd9798de92457d7c9218f172ea37af929eae275c412c12f",
+      "committed_to_git": false,
+      "rows": 1045807,
+      "columns": 32,
+      "schema_sha256": "0ad4ba8906a61d6b5e18eba59e1f5f012685210d4ced37ffe958c5be28138554",
+      "content_sha256": "64a3b706899d5fc9f9ddbfbbd89051c1366434670036901b6b188bf0744a6940"
+    },
+    "processed/rotation_breaks.parquet": {
+      "description": "Phase 2 rejected pairs",
+      "bytes": 1994705,
+      "file_sha256": "a71125992ad4ffb9fcfbc944a54b4127b1b46edc9293fac8aa2950dd7f31e6f6",
+      "committed_to_git": false,
+      "rows": 93458,
+      "columns": 15,
+      "schema_sha256": "96fe74cc8417f2767838dab3e3505a77f8540d16ad7b7e6a6a564f8176cb334f",
+      "content_sha256": "77c4845d1c77c964381c47f9f8ba13e33cc22f3903e6849e2805b171feda3638"
+    },
+    "processed/mtt_sensitivity.parquet": {
+      "description": "Phase 2 MTT sensitivity",
+      "bytes": 18750799,
+      "file_sha256": "4683cc41edf5c1764a0d117dfe9bd89f48b7553969e84ef48b6219646b10e5b6",
+      "committed_to_git": false,
+      "rows": 1045807,
+      "columns": 9,
+      "schema_sha256": "c99af200e5e3649bbdae9ecaadc022745e58401ce75854340fdacad8f653d6d6",
+      "content_sha256": "75fc26f7b6a413fc975a397556f4ea0a462873ea5690d60980bc02d4ac26f336"
+    },
+    "processed/dq_treatment_log.csv": {
+      "description": "Data-quality treatment log",
+      "bytes": 3621,
+      "file_sha256": "a6078746a96b19aed2cc6bd90bab670fdbac4e25ad2dcd2c183eb5ec0655c5af",
+      "committed_to_git": true,
+      "rows": 19,
+      "columns": 5
+    },
+    "sample/aa_clean_sample.csv": {
+      "description": "5,000-row stratified sample of the clean table",
+      "bytes": 1777920,
+      "file_sha256": "122404bdcbece4cc99e3a0327558df403fb9daa0330fb1959313ac594430e829",
+      "committed_to_git": true,
+      "rows": 5000,
+      "columns": 59
+    }
+  }
+}

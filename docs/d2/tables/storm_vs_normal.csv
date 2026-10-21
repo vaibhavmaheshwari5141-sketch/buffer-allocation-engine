@@ -1,0 +1,4 @@
+group_name,days,flights_per_day,cancelled_pct,diverted_pct,arr_del15_pct,mean_arr_delay_min,mean_arr_delay_capped_min,pct_flights_in_usable_segments,turns_per_day,mean_outbound_dep_delay_min
+all other days,577,2711.0,1.81,0.369,25.97,13.95,12.09,86.26,1738.0,16.23
+other January 2026 days,26,2489.0,1.26,0.238,20.97,6.78,5.17,86.19,1565.0,10.41
+storm days (2026-01-24 to 2026-01-28),5,2410.0,50.13,0.199,55.92,88.69,73.77,30.59,464.0,70.15

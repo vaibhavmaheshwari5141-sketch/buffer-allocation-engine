@@ -1,0 +1,5 @@
+iata,flights_as_origin,flights_as_dest,iso_country,class
+PBI,10305.0,10305.0,unmatched,not matched in OurAirports
+SJU,8102.0,8101.0,PR,US territory
+STT,3799.0,3799.0,VI,US territory
+STX,1327.0,1328.0,VI,US territory

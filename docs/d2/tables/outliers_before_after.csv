@@ -1,0 +1,9 @@
+variable,rule,rows_before,pct_before,treatment,rows_after_in_modelling_column,where_flagged_or_treated
+ArrDelay,more than 1440 min (24 h),750,0.0457,Original kept and flagged (dq_extreme_delay_24h); capped column added,0,arr_delay_min_capped
+ArrDelay,"outside train-period limits [-42, 454] min",17033,1.0379,Winsorised in arr_delay_min_capped; original unchanged,0,arr_delay_min_capped
+DepDelay,more than 1440 min (24 h),769,0.0469,Kept and flagged (dq_extreme_delay_24h); departure delay is not capped,769,dq_extreme_delay_24h
+DepDelay,more than 60 min early,1,0.0001,Kept and flagged (dq_outlier_other),1,dq_outlier_other
+TaxiOut,more than 180 min,6,0.0004,"Kept and flagged (dq_outlier_other); outcome field, never a feature",6,dq_outlier_other
+TaxiIn,more than 180 min,59,0.0036,"Kept and flagged (dq_outlier_other); outcome field, never a feature",59,dq_outlier_other
+ActualElapsedTime - CRSElapsedTime,differs by more than 180 min,63,0.0038,Kept and flagged (dq_outlier_other),63,dq_outlier_other
+Distance,"zero, negative or above 5000 mi",0,0.0,None found,0,dq_outlier_other

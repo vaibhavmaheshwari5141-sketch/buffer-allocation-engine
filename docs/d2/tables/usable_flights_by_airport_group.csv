@@ -1,0 +1,4 @@
+airport_group,flights,pct_flights_in_usable_segments
+airports 11-30,319236,86.12
+top 10 airports,1001327,85.83
+other airports,320508,85.64

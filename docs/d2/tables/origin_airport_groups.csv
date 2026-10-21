@@ -1,0 +1,4 @@
+group,airports,flights,share_pct,cancelled_pct,diverted_pct,arr_del15_pct
+top 10 airports,10,1001327,61.02,2.154,0.337,28.413
+airports 11-30,20,319236,19.45,2.155,0.39,22.079
+other airports,107,320508,19.53,2.121,0.417,21.745

@@ -1,0 +1,7 @@
+check,duplicate_groups,rows_involved,excess_rows,note
+Same FlightDate + flight number + Origin + Dest + CRSDepTime,0,0,0,The project key; flight_id is built from it
+Same key plus Tail_Number,0,0,0,
+Duplicate flight_id,0,0,0,flight_id must be unique
+Exact duplicate rows (all 45 BTS columns identical),0,0,0,
+Same tail number on two OPERATED flights departing at the same scheduled UTC minute,140,280,140,"Not a row duplicate: one aircraft cannot fly two flights at once, so one of the tail numbers is wrong or reassigned"
+Same tail number on two flights (any status) at the same scheduled UTC minute,351,702,351,Includes cancelled flights

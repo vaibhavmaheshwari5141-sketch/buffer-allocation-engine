@@ -1,0 +1,2 @@
+flight_id,FlightDate,Origin,Dest,CRSDepTime,CRSArrTime,CRSElapsedTime,crs_dep_utc,crs_arr_utc,utc_block_min,Cancelled,Diverted
+20251102-2798-PDX-PHX-0525,2025-11-02,PDX,PHX,525,901,216.0,2025-11-02 13:25:00+00:00,2025-11-02 16:01:00+00:00,156.0,1,0

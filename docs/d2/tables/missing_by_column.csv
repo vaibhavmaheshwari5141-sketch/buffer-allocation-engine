@@ -1,0 +1,60 @@
+column_name,n_rows,n_missing,pct_missing,n_structural,n_unexpected,pct_unexpected,expected_null_rule
+CancellationCode,1641071,1605826.0,97.8523,1605826.0,0.0,0.0,only populated when cancelled
+CarrierDelay,1641071,1227040.0,74.7707,1227040.0,0.0,0.0,cause columns: null unless operated and ArrDelay >= 15
+LateAircraftDelay,1641071,1227040.0,74.7707,1227040.0,0.0,0.0,cause columns: null unless operated and ArrDelay >= 15
+NASDelay,1641071,1227040.0,74.7707,1227040.0,0.0,0.0,cause columns: null unless operated and ArrDelay >= 15
+SecurityDelay,1641071,1227040.0,74.7707,1227040.0,0.0,0.0,cause columns: null unless operated and ArrDelay >= 15
+WeatherDelay,1641071,1227040.0,74.7707,1227040.0,0.0,0.0,cause columns: null unless operated and ArrDelay >= 15
+ActualElapsedTime,1641071,41202.0,2.5107,41202.0,0.0,0.0,null for cancelled or diverted flights
+AirTime,1641071,41202.0,2.5107,41202.0,0.0,0.0,null for cancelled or diverted flights
+ArrDel15,1641071,41202.0,2.5107,41202.0,0.0,0.0,null for cancelled or diverted flights
+ArrDelay,1641071,41202.0,2.5107,41202.0,0.0,0.0,null for cancelled or diverted flights
+ArrDelayMinutes,1641071,41202.0,2.5107,41202.0,0.0,0.0,null for cancelled or diverted flights
+arr_delay_min_capped,1641071,41202.0,2.5107,41202.0,0.0,0.0,null for cancelled or diverted flights
+ArrTime,1641071,35369.0,2.1552,35369.0,0.0,0.0,null for cancelled or diverted flights
+TaxiIn,1641071,35369.0,2.1552,35369.0,0.0,0.0,null for cancelled or diverted flights
+WheelsOn,1641071,35369.0,2.1552,35369.0,0.0,0.0,null for cancelled or diverted flights
+TaxiOut,1641071,35140.0,2.1413,35140.0,0.0,0.0,null for cancelled flights
+WheelsOff,1641071,35140.0,2.1413,35140.0,0.0,0.0,null for cancelled flights
+DepDel15,1641071,34143.0,2.0805,34143.0,0.0,0.0,null for cancelled flights
+DepDelay,1641071,34143.0,2.0805,34143.0,0.0,0.0,null for cancelled flights
+DepTime,1641071,34143.0,2.0805,34143.0,0.0,0.0,null for cancelled flights
+Tail_Number,1641071,11.0,0.0007,0.0,11.0,0.00067,never expected to be null; the missing rows are all cancelled flights (flag dq_missing_tail)
+CRSArrTime,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+CRSDepTime,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+CRSElapsedTime,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+Cancelled,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+DayOfWeek,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+DayofMonth,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+DepTimeBlk,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+Dest,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+DestAirportID,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+DestCityName,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+DestState,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+Distance,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+Diverted,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+FlightDate,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+Flight_Number_Reporting_Airline,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+Month,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+Origin,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+OriginAirportID,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+OriginCityName,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+OriginState,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+Quarter,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+Reporting_Airline,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+Year,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+crs_arr_min,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+crs_arr_utc,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+crs_dep_min,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+crs_dep_utc,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+dq_duplicate_key,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+dq_extreme_delay_24h,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+dq_missing_tail,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+dq_outlier_other,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+dq_time_conflict,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+flight_id,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+is_operated,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+split,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+struct_null_cancelled,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null
+struct_null_delay_cause,1641071,0.0,0.0,0.0,0.0,0.0,cause columns: null unless operated and ArrDelay >= 15
+struct_null_diverted,1641071,0.0,0.0,0.0,0.0,0.0,never expected to be null

@@ -1,0 +1,69 @@
+name,status,logic,source_columns,kind,leakage_risk,allowed_as_prediction_feature,reason
+crs_dep_min,built,CRSDepTime hhmm to minutes after local midnight (2400 = 1440),CRSDepTime,derived,none,yes,Schedule only; known before departure
+crs_arr_min,built,CRSArrTime hhmm to minutes after local midnight,CRSArrTime,derived,none,yes,Schedule only
+crs_dep_utc,built,"FlightDate + CRSDepTime at the origin, converted to UTC with the airport IANA zone (DST handled)","FlightDate, CRSDepTime, Origin, airports_tz",derived,none,yes,Schedule only; zone from public reference data
+crs_arr_utc,built,"Arrival date inferred (first date after departure in UTC), CRSArrTime at the destination, to UTC","FlightDate, CRSArrTime, Dest, airports_tz",derived,none,yes,Schedule only
+flight_id,built,YYYYMMDD-flightnumber-origin-dest-CRSDepTime,"FlightDate, Flight_Number_Reporting_Airline, Origin, Dest, CRSDepTime",derived,none,no,"Unique key, not a predictor"
+Tail_Number (normalised),built,"Trim, upper-case, empty to null",Tail_Number,real,review,no,As-flown aircraft; can reflect delay-driven swaps. Used as the rotation key only
+is_operated,built,Cancelled = 0 and Diverted = 0,"Cancelled, Diverted",derived,outcome,no,Known only after the day
+struct_null_cancelled / struct_null_diverted / struct_null_delay_cause,built,Rows whose columns are structurally null by BTS rules,"Cancelled, Diverted, ArrDelay",derived,outcome,no,Defined from outcomes
+dq_missing_tail,built,Tail_Number is null,Tail_Number,derived,outcome,no,Data-quality flag
+dq_extreme_delay_24h,built,DepDelay or ArrDelay above 1440 min,"DepDelay, ArrDelay",derived,outcome,no,Defined from outcomes
+dq_time_conflict,built,"UTC block differs from CRSElapsedTime, AirTime > ActualElapsedTime, ArrDel15 inconsistent, etc.",several,derived,outcome,no,Data-quality flag using actuals
+dq_duplicate_key,built,"Another row has the same FlightDate, flight number, Origin, Dest, CRSDepTime",key columns,derived,none,no,Data-quality flag
+dq_outlier_other,built,"Taxi over 180 min, departure over 60 min early, elapsed vs schedule over 180 min, invalid distance","TaxiOut, TaxiIn, DepDelay, ActualElapsedTime, Distance",derived,outcome,no,Defined from actuals
+split,built,"train to 2025-09-30, validate 2025-10 to 2025-12, test 2026-01 to 2026-08, by FlightDate",FlightDate,derived,none,no,"Partition label, never an input"
+arr_delay_min_capped,built,ArrDelay clipped to train-period quantiles 0.5% / 99.5%,"ArrDelay, split",derived,outcome,no,Outcome (target-side); thresholds from train only
+arr_day_offset,built,"Days between departure date and inferred arrival date (0, 1)","crs_dep_utc, crs_arr_utc",derived,none,yes,Schedule only
+flag_overnight_arrival,built,arr_day_offset > 0,arr_day_offset,derived,none,yes,Schedule only
+crs_dep_local / crs_arr_local,built,Scheduled times as local clock timestamps,"FlightDate, CRS times",derived,none,yes,Schedule only
+rotation_id,built,{tail_number}_{flight_date},"Tail_Number, FlightDate",derived,review,no,Built from as-flown tail; key only
+operating_day,built,FlightDate of the first flight of a run with no rest over 300 min,"Tail_Number, crs_dep_utc, crs_arr_utc",derived,review,no,Depends on the realised tail sequence
+segment_id,built,{tail}_{first leg flight_id} of a run of linked operated legs,chain,derived,review,no,Realised chain; depends on cancellations and swaps
+leg_idx,built,"Position of the leg in its segment, 1-based",chain,derived,review,review,Realised chain: depends on same-day cancellations and swaps. Needs a leakage review; allowed for the optimiser (planned = operated assumption)
+n_legs,built,Legs in the segment,chain,derived,review,review,Realised chain: needs a leakage review
+n_segments,built,Segments in the tail-day,chain,derived,review,review,Realised chain
+n_downstream_legs,built,n_legs - leg_idx,chain,derived,review,review,Realised chain: a lower bound on planned exposure; needs a leakage review. Allowed for the optimiser
+n_cancelled_in_tail_day,built,Cancelled flights of the tail on the date,"Cancelled, Tail_Number",derived,outcome,no,Defined from outcomes
+is_first_leg / is_last_leg,built,leg_idx = 1 / leg_idx = n_legs,chain,derived,review,review,Realised chain
+break_reason_before / break_reason_after,built,"Why a chain starts or ends: first_flight, long_rest, cancelled, diverted, airport_mismatch, swap_suspect",chain,derived,outcome,no,Uses same-day cancellations and diversions
+category,built,"usable_segment, single_leg_segment, cancelled, diverted, missing_tail, other","chain, Cancelled, Diverted",derived,outcome,no,Reconciliation label
+usable,built,Operated and in a segment of 2+ legs,chain,derived,outcome,no,Depends on same-day outcomes
+act_dep_utc / act_arr_utc,built,Scheduled UTC + DepDelay / ArrDelay,"crs_*_utc, DepDelay, ArrDelay",derived,outcome,no,Actual times
+primary_delay_min,built,"max(ArrDelay, 0) - coalesce(LateAircraftDelay, 0)","ArrDelay, LateAircraftDelay",derived,outcome,no,Outcome; the simulator input
+sched_ground_min,built,Next scheduled departure minus scheduled arrival (UTC) for linked legs,"crs_dep_utc, crs_arr_utc, chain",derived,review,review,"Known from the schedule, but defined through the realised tail sequence"
+actual_ground_min,built,Next actual departure minus actual arrival,act_*_utc,derived,outcome,no,Actuals
+mtt_min,built,"10th percentile of actual ground time on time-pressured TRAIN turns by station and time-of-day band (fallbacks, floor 25, cap 60)","turns, split",assumption,review,review,"Fitted on train outcomes; an assumption, not an observation. Train data only"
+mtt_source,built,"station_band, class_band or global fallback used",mtt estimate,derived,none,no,Provenance label
+planned_buffer_min,built,"max(0, sched_ground_min - mtt_min)","sched_ground_min, mtt_min",assumption,review,review,Inherits the review needs of both inputs
+flag_below_mtt,built,sched_ground_min < mtt_min,"sched_ground_min, mtt_min",assumption,review,review,As above
+buffer_bucket,built,"planned buffer bucket: 0, 1-15, 16-30, 31-60, 60+",planned_buffer_min,assumption,review,review,As above
+tod_band,built,"Local hour of outbound departure: morning 05-09, midday 10-14, afternoon 15-19, night 20-04",crs_dep_local,derived,none,yes,Schedule only
+station_class,built,"high_volume if a station has at least 20 train turns per day, else other","turns, split",derived,low,review,Estimated on train data; fine if refit on train only
+turn_index_in_segment / n_downstream_legs_after_turn,built,Position of the turn and legs after it,chain,derived,review,review,Realised chain
+flag_actual_ground_nonpositive,built,actual_ground_min <= 0,actual_ground_min,derived,outcome,no,Actuals
+storm_day_flag,built,FlightDate in 2026-01-24 to 2026-01-28,FlightDate,derived,outcome,no,Defined in hindsight from a known disruption; use to include or exclude days in evaluation
+high_cancel_day,built,More than 10% of the day's flights cancelled,Cancelled,derived,outcome,no,Defined from same-day outcomes
+dep_hour_local,planned,Hour of crs_dep_local,crs_dep_local,derived,none,yes,Schedule only; late-arrival rate rises from 10% at 05:00 to 37% at 19:00
+dep_minute_of_day,planned,crs_dep_min,crs_dep_min,derived,none,yes,Schedule only
+arr_hour_local,planned,Hour of crs_arr_local,crs_arr_local,derived,none,yes,Schedule only
+day_of_week,planned,DayOfWeek,DayOfWeek,real,none,yes,Calendar
+month_of_year,planned,Month,Month,real,none,yes,Calendar; limited seasonal coverage (see docs/d2)
+is_weekend,planned,"DayOfWeek in (6, 7)",DayOfWeek,derived,none,yes,Calendar
+is_us_federal_holiday / days_to_holiday,planned,US federal holiday calendar (public reference) and distance in days,FlightDate,derived,none,yes,Calendar; known long in advance; reference data to be added
+origin / dest / route,planned,Airport codes and the origin-dest pair as categorical features,"Origin, Dest",real,none,yes,"Schedule only; high cardinality, encode on train"
+distance_mi / distance_bin,planned,Distance and binned distance,Distance,real,none,yes,Schedule only
+sched_block_min,planned,CRSElapsedTime,CRSElapsedTime,real,none,yes,Schedule only
+block_vs_distance_ratio,planned,CRSElapsedTime / Distance: schedule padding,"CRSElapsedTime, Distance",derived,none,yes,Schedule only
+tz_offset_diff,planned,Difference in UTC offsets between origin and destination on the day,"airports_tz, crs_*_utc",derived,none,yes,Schedule only
+flight_number,planned,Flight_Number_Reporting_Airline,Flight_Number_Reporting_Airline,real,none,yes,Schedule only; high cardinality
+origin_dep_density,planned,Number of AA flights scheduled to depart the origin in the same local hour,"Origin, crs_dep_local",derived,none,yes,Congestion proxy from the published schedule
+dest_arr_density,planned,Number of AA flights scheduled to arrive at the destination in the same local hour,"Dest, crs_arr_local",derived,none,yes,Congestion proxy from the published schedule
+origin_is_high_volume,planned,Origin class (high_volume / other),station_class,derived,low,yes,Class fixed from train data
+hist_route_delay_rate,planned,"ArrDel15 rate for the route (origin-dest) in the TRAINING window only, smoothed","ArrDel15, Origin, Dest, split",derived,review,review,Historical delay rates must use the training window only; for training rows use out-of-fold estimates
+hist_flight_number_delay_rate,planned,ArrDel15 rate by flight number in the training window only,"ArrDel15, flight number, split",derived,review,review,Same rule: training window only
+hist_origin_hour_delay_rate,planned,ArrDel15 rate by origin and local departure hour in the training window only,"ArrDel15, Origin, crs_dep_min, split",derived,review,review,Same rule: training window only
+hist_origin_dow_delay_rate,planned,ArrDel15 rate by origin and day of week in the training window only,"ArrDel15, Origin, DayOfWeek, split",derived,review,review,Same rule: training window only
+planned_leg_position,planned,Position of the flight in the aircraft's planned day (needs the planned rotation),"schedule, chain",derived,review,review,Leg position comes from the realised chain; use only if a planned rotation known before departure can be built
+planned_inbound_ground_min,planned,Scheduled ground time before the flight (planned turn),sched_ground_min,derived,review,review,Realised-chain definition; needs a leakage review
+planned_buffer_before_min,planned,Planned buffer before the flight,planned_buffer_min,assumption,review,review,Inherits MTT assumption and chain review

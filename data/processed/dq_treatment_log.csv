@@ -1,0 +1,20 @@
+issue,count,percent,treatment,reason
+"Non-AA carrier rows in the raw BTS files (scope filter applied in the base step, before cleaning)",10089280,86.01,Excluded by design (Reporting_Airline = 'AA'); percent is of all raw rows,Project scope is AA mainline; counts per month are in docs/d2/tables/aa_share_by_month.csv
+"Cancelled flights: departure, arrival, delay, taxi and elapsed columns are null by definition",35245,2.1477,Kept as null (not imputed); flagged struct_null_cancelled,"Null means the flight did not operate, not that a value is missing"
+Diverted flights: arrival-side columns are null by definition,5957,0.363,Kept as null (not imputed); flagged struct_null_diverted,BTS does not report arrival fields for diverted flights
+Delay-cause columns null because the flight is not a late arrival (ArrDelay < 15) or did not operate,1227040,74.7707,Kept as null (not imputed); flagged struct_null_delay_cause,BTS fills the five cause columns only for arrivals 15+ minutes late; zero would be a false value
+CancellationCode null on flights that were not cancelled,1605826,97.8523,Kept as null,Only meaningful for cancelled flights
+Missing Tail_Number,11,0.0007,Row kept; flagged dq_missing_tail; cannot join a rotation,11 of 11 are cancelled flights; they count as 'cancelled' in rotations.parquet
+Extreme delay: DepDelay or ArrDelay more than 24 hours,781,0.0476,Row kept and original delays untouched; flagged dq_extreme_delay_24h; arr_delay_min_capped added for modelling,Real events (flights held overnight); deleting them would bias delay statistics downwards
+"ArrDelay outside the winsorising limits [-42.0, 454.0] min (train-period operated flights, quantiles 0.005 / 0.995)",17033,1.0379,Clipped in the new column arr_delay_min_capped; original ArrDelay unchanged,"Limits come from train data only, so no test information enters the cap; for models sensitive to extreme values"
+"Duplicate flight key (FlightDate, flight number, Origin, Dest, CRSDepTime)",0,0.0,None needed; flagged dq_duplicate_key,No duplicates found
+Time conflict: UTC block time differs from BTS CRSElapsedTime by 0.5 min or more,1,0.0001,Row kept; flagged dq_time_conflict,Mismatching flights are on the US daylight-saving change date (see docs/d2/tables/time_conflicts.csv); the BTS value looks like it ignores the clock change. Not verified with BTS
+Time conflict: AirTime greater than ActualElapsedTime,0,0.0,Row kept; flagged dq_time_conflict,Physically inconsistent
+Time conflict: ArrDel15 inconsistent with ArrDelay,0,0.0,Row kept; flagged dq_time_conflict,Label and value must agree
+Operated flight with missing ArrDelay,0,0.0,Row kept; flagged dq_time_conflict,Operated flights should always have an arrival delay
+Cancelled flight with an ArrTime,0,0.0,Row kept; flagged dq_time_conflict,A cancelled flight cannot arrive
+Taxi time over 180 minutes (TaxiOut or TaxiIn),65,0.004,Row kept; flagged dq_outlier_other,Plausibly real (long ground holds); not removed
+Departure more than 60 minutes early,1,0.0001,Row kept; flagged dq_outlier_other,Extreme but possible
+ActualElapsedTime differs from CRSElapsedTime by more than 180 minutes,63,0.0038,Row kept; flagged dq_outlier_other,"Holding, diversion-like routing or extreme taxi; not removed"
+"Distance zero, negative or above 5000 miles",0,0.0,None needed; flagged dq_outlier_other,No invalid distances found
+"Nulls not explained by the structural rules (unexpected missing values), excluding Tail_Number which is counted above",0,0.0,None needed,Every null in an operated flight's timing columns would be unexpected; see docs/d2/tables/missing_by_column.csv

@@ -1,0 +1,5 @@
+class,iso_country,airports,flights_as_origin,flights_as_dest
+US (50 states and DC),US,133,1617538.0,1617538.0
+US territory,PR,1,8102.0,8101.0
+US territory,VI,2,5126.0,5127.0
+not matched in OurAirports,unmatched,1,10305.0,10305.0

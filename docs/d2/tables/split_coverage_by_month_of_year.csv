@@ -1,0 +1,13 @@
+month_of_year,month_name,train,validate,test,in_train,in_validate,in_test
+1,Jan,75088,0,76772,True,False,True
+2,Feb,69876,0,72786,True,False,True
+3,Mar,82536,0,84647,True,False,True
+4,Apr,82261,0,84538,True,False,True
+5,May,86123,0,88740,True,False,True
+6,Jun,85419,0,86464,True,False,True
+7,Jul,87852,0,89200,True,False,True
+8,Aug,83024,0,84271,True,False,True
+9,Sep,77306,0,0,True,False,False
+10,Oct,0,85483,0,False,True,False
+11,Nov,0,78826,0,False,True,False
+12,Dec,0,79859,0,False,True,False
